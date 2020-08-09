@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Conversion</title>
+</head>
+
+<body>
+    <h1>Video Conversion</h1>
+    <form method=post enctype=multipart/form-data>
+        <table>
+            <tr>
+                <input type=file name=file required>
+            </tr>
+            <tr>
+                <td>
+                    <label for="preset">Choose a preset</label>
+                </td>
+                <td>
+                    :
+                    <select name="preset" id="preset">
+                        <option value="ultrafast">ultrafast</option>
+                        <option value="superfast">superfast</option>
+                        <option value="veryfast">veryfast</option>
+                        <option value="faster">faster</option>
+                        <option value="fast">fast</option>
+                        <option value="medium" selected>medium</option>
+                        <option value="slow">slow</option>
+                        <option value="slower">slower</option>
+                        <option value="veryslow">veryslow</option>
+                        <option value="placebo">placebo</option>
+                    </select>
+                </td>
+            </tr>
+
+            <tr>
+                <td>
+                    <label for="resolution">Choose a resolution</label>
+                </td>
+                <td>
+                    :
+                    <select name="resolution" id="resolution">
+                        <option value="426x240">(240p) 426x240</option>
+                        <option value="640x360">(360p) 640x360</option>
+                        <option value="854x480" selected>(480p) 854x480</option>
+                        <option value="1280x720">(720p) 1280x720</option>
+                        <option value="1920x1080">(1080p) 1920x1080</option>
+                    </select>
+                </td>
+            </tr>
+
+            <tr>
+                <td>
+                    <label for="framerate">Choose a framerate</label>
+                </td>
+                <td>
+                    :
+                    <select name="framerate" id="framerate">
+                        <option value="30" selected>30</option>
+                        <option value="60">60</option>
+                        <option value="90">90</option>
+                        <option value="120">120</option>
+                    </select>
+                </td>
+            </tr>
+
+            <tr>
+                <td>
+                    <label for="format">Choose a format</label>
+                </td>
+                <td>
+                    :
+                    <select name="format" id="format">
+                        <option value=".mov">mov</option>
+                        <option value=".mp4" selected>mp4</option>
+                        <option value=".mkv">mkv</option>
+                        <option value=".avi">avi</option>
+                        <option value=".flv">flv</option>
+                        <option value=".mpg">mpg</option>
+                        <option value=".ogv">ogv</option>
+                        <option value=".webm">webm</option>
+                        <option value=".wmv">wmv</option>
+                    </select>
+                </td>
+            </tr>
+
+            <input type=submit value=Convert>
+        </table>
+    </form>
+</body>
+
+</html>
