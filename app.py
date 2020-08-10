@@ -1,15 +1,16 @@
-from flask import Flask, render_template, flash, request, redirect, url_for, send_file, after_this_request, jsonify
+from flask import Flask, render_template, request, redirect, url_for, send_file, after_this_request, jsonify
 from werkzeug.utils import secure_filename
 import os
 import random
 import string
-
 from celery import Celery
 
+# Convert configuration
 UPLOAD_FOLDER = './video_input/'
 RESULT_FOLDER = './video_output/'
 ALLOWED_EXTENSIONS = {'mov', 'mp4', 'mkv', 'avi', 'flv', 'mpg', 'ogv', 'webm', 'wmv'}
 
+# Flask configuration
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['SECRET_KEY'] = 'secret'
@@ -22,43 +23,6 @@ app.config['CELERY_RESULT_BACKEND'] = 'redis://localhost:6379/0'
 celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
 celery.conf.update(app.config)
 
-
-@app.route('/', methods=['GET', 'POST'])
-def home():
-    if request.method == 'POST':
-        # CHECK IF THE POST REQUEST HAS THE FILE PART
-        if 'file' not in request.files:
-            flash('No file part')
-            return 'No File.', 400
-
-        file = request.files['file']
-        presetOption = request.form['preset']
-        resolutionOption = request.form['resolution']
-        frameRateOption = request.form['framerate']
-        outputFormat = request.form['format']
-
-        #  IF FILENAME IS EMPTY
-        if file.filename == '':
-            flash('No selected file')
-            return 'Filename is empty.', 400
-
-        if file and allowed_file(file.filename):
-            try:
-                generateFilename = get_random_string(10)
-                # must async (1)
-                upload(file, generateFilename)
-                # get_random_string(6)
-                inputFormat = os.path.splitext(file.filename)[1]
-                # must async (2)
-                task = convert.delay(generateFilename, inputFormat, presetOption, resolutionOption, frameRateOption, outputFormat)
-
-                return jsonify({'status' : 'File accepted'}), 202, {'Location': url_for('taskstatus', task_id=task.id)}
-            except Exception as e:
-                return 'Conversion Failed! ' + str(e), 400
-
-    elif request.method == 'GET':
-        return render_template('index.html'), 200
-
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -69,37 +33,83 @@ def upload(file, generateFilename):
     filename = generateFilename + file_extension
     file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
+def get_random_string(length):
+    letters = string.ascii_lowercase
+    result_str = ''.join(random.choice(letters) for i in range(length))
+    return result_str
+
+@app.before_first_request
+def cleanUp():
+    try:
+        for filename in os.listdir(UPLOAD_FOLDER):
+            os.remove(UPLOAD_FOLDER + filename)
+
+        for filename in os.listdir(RESULT_FOLDER):
+            os.remove(RESULT_FOLDER + filename)
+
+        print("Temporary files have been cleaned.")
+    except Exception as e:
+        print(str(e))
+
 @celery.task(bind=True)
 def convert(self, inputFilename, inputFormat, presetOption, resolutionOption, frameRateOption, outputFormat):
-    # INPUT
-    inputDir = UPLOAD_FOLDER
 
-    # Output
-    outputDir = RESULT_FOLDER
     outputFilename = 'converted-' +inputFilename + '-' + presetOption + '-' + resolutionOption + '-' + frameRateOption
-    # outputFilename = 'output'
     
-    converted = os.system('ffmpeg -y -i ' + inputDir + inputFilename + inputFormat + ' -c:v libx264 -preset ' + presetOption + ' -r ' + frameRateOption + ' -c:a copy -s ' + resolutionOption + ' ' + outputDir + outputFilename + outputFormat)
+    converted = os.system('ffmpeg -y -i ' + UPLOAD_FOLDER + inputFilename + inputFormat + ' -c:v libx264 -preset ' + presetOption + ' -r ' + frameRateOption + ' -c:a copy -s ' + resolutionOption + ' ' + RESULT_FOLDER + outputFilename + outputFormat)
     
+    # Remove input file immediately after conversion
     try:
         os.remove(UPLOAD_FOLDER + inputFilename + inputFormat)
     except Exception as error:
         app.logger.error("Error removing or closing downloaded file handle", error)
 
+    # 0 ia success, 1 is failed
     if converted == 0:
         return outputFilename + outputFormat
     else:
         return False
 
-def get_random_string(length):
-    letters = string.ascii_lowercase
-    result_str = ''.join(random.choice(letters) for i in range(length))
-    # print("Random string of length", length, "is:", result_str)
-    return result_str
+@app.route('/', methods=['GET', 'POST'])
+def home():
+    if request.method == 'POST':
+        # Check if yhe POST request has the file
+        if 'file' not in request.files:
+            return 'No File.', 400
 
-@app.route('/download/<file>')
+        file = request.files['file']
+        presetOption = request.form['preset']
+        resolutionOption = request.form['resolution']
+        frameRateOption = request.form['framerate']
+        outputFormat = request.form['format']
+
+        # If filename is empty
+        if file.filename == '':
+            return 'Filename is empty.', 400
+
+        if file and allowed_file(file.filename):
+            try:
+                generateFilename = get_random_string(10)
+                inputFormat = os.path.splitext(file.filename)[1]
+
+                # must async (1)
+                upload(file, generateFilename)
+
+                # Asynchronous task
+                task = convert.delay(generateFilename, inputFormat, presetOption, resolutionOption, frameRateOption, outputFormat)
+
+                return jsonify({'status' : 'File accepted'}), 202, {'Location': url_for('taskstatus', task_id=task.id)}
+            except Exception as e:
+                return 'Conversion Failed! ' + str(e), 400
+
+    elif request.method == 'GET':
+        return render_template('index.html'), 200
+
+# Download file
+@app.route('/download/<file>', methods=['GET'])
 def download_file(file):
     try:
+        # Remove converted file after downloaded
         @after_this_request
         def remove_file(response):
             try:
@@ -113,7 +123,8 @@ def download_file(file):
     except Exception as e:
         return str(e), 404
 
-@app.route('/status/<task_id>')
+# Get Task Status
+@app.route('/status/<task_id>', methods=['GET'])
 def taskstatus(task_id):
     task = convert.AsyncResult(task_id)
     if task.info:
@@ -125,3 +136,6 @@ def taskstatus(task_id):
 
 if __name__ == "__main__":
     app.run(debug=True, host='0.0.0.0')
+
+
+# celery -A app.celery worker --loglevel=info
