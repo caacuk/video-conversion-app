@@ -1,5 +1,4 @@
 from flask import Flask, render_template, request, redirect, url_for, send_file, after_this_request, jsonify
-from werkzeug.utils import secure_filename
 import os
 import random
 import string
@@ -8,7 +7,7 @@ from celery import Celery
 # Convert configuration
 UPLOAD_FOLDER = './video_input/'
 RESULT_FOLDER = './video_output/'
-ALLOWED_EXTENSIONS = {'mov', 'mp4', 'mkv', 'avi', 'flv', 'mpg', 'ogv', 'webm', 'wmv'}
+ALLOWED_EXTENSIONS = {'mov', 'mp4', 'mkv', 'avi', 'flv', 'wmv'}
 
 # Flask configuration
 app = Flask(__name__)
@@ -56,7 +55,9 @@ def convert(self, inputFilename, inputFormat, presetOption, resolutionOption, fr
 
     outputFilename = 'converted-' +inputFilename + '-' + presetOption + '-' + resolutionOption + '-' + frameRateOption
     
-    converted = os.system('ffmpeg -y -i ' + UPLOAD_FOLDER + inputFilename + inputFormat + ' -c:v libx264 -preset ' + presetOption + ' -r ' + frameRateOption + ' -c:a copy -s ' + resolutionOption + ' ' + RESULT_FOLDER + outputFilename + outputFormat)
+    videoCodec = 'libx264'
+    
+    converted = os.system('ffmpeg -y -i ' + UPLOAD_FOLDER + inputFilename + inputFormat + ' -c:v ' + videoCodec + ' -preset ' + presetOption + ' -r ' + frameRateOption + ' -c:a copy -s ' + resolutionOption + ' ' + RESULT_FOLDER + outputFilename + outputFormat)
     
     # Remove input file immediately after conversion
     try:
@@ -73,7 +74,7 @@ def convert(self, inputFilename, inputFormat, presetOption, resolutionOption, fr
 @app.route('/', methods=['GET', 'POST'])
 def home():
     if request.method == 'POST':
-        # Check if yhe POST request has the file
+        # Check if the POST request has the file
         if 'file' not in request.files:
             return 'No File.', 400
 
@@ -89,10 +90,11 @@ def home():
 
         if file and allowed_file(file.filename):
             try:
+                # Genarate filename (avoid overwrite file)
                 generateFilename = get_random_string(10)
                 inputFormat = os.path.splitext(file.filename)[1]
 
-                # must async (1)
+                # Upload file
                 upload(file, generateFilename)
 
                 # Asynchronous task
