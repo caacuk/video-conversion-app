@@ -1,4 +1,4 @@
-# video-conversion-app
+# Video Conversion App
 
 ![Video Conversion](https://github.com/caacuk/video-conversion-app/blob/master/Capture.PNG?raw=true)
 
