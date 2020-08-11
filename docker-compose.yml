@@ -1,0 +1,24 @@
+version: '2'
+services:
+  web:
+    build:
+      context: ./flask-app
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+     - "5000:5000"
+    depends_on:
+      - redis
+    volumes:
+      - ./appdata:/appdata
+  worker:
+    build:
+      context: ./flask-celery
+      dockerfile: Dockerfile
+    depends_on:
+      - redis
+    volumes:
+      - ./appdata:/appdata
+  
+  redis:
+    image: redis
