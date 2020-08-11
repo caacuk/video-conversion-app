@@ -22,7 +22,7 @@ def allowed_file(filename):
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def upload(file, generateFilename):
-    # SAVE FILE TO video_input WITH FILENAME is input.<extension>
+    # Save file to appdata
     file_extension = os.path.splitext(file.filename)[1]
     filename = generateFilename + file_extension
     file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
