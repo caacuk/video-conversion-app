@@ -76,7 +76,7 @@ def home():
     if request.method == 'POST':
         # Check if the POST request has the file
         if 'file' not in request.files:
-            return 'No File.', 400
+            return jsonify({'status' : 'No File.'}), 400
 
         file = request.files['file']
         presetOption = request.form['preset']
@@ -86,7 +86,7 @@ def home():
 
         # If filename is empty
         if file.filename == '':
-            return 'Filename is empty.', 400
+            return jsonify({'status' : 'Filename is empty.'}), 400
 
         if file and allowed_file(file.filename):
             try:
@@ -100,9 +100,9 @@ def home():
                 # Asynchronous task
                 task = convert.delay(generateFilename, inputFormat, presetOption, resolutionOption, frameRateOption, outputFormat)
 
-                return jsonify({'status' : 'File accepted'}), 202, {'Location': url_for('taskstatus', task_id=task.id)}
+                return jsonify({'status' : 'File Accepted'}), 202, {'Location': url_for('taskstatus', task_id=task.id)}
             except Exception as e:
-                return 'Conversion Failed! ' + str(e), 400
+                return jsonify({'status' : 'Conversion Failed! ' + str(e)}), 400
 
     elif request.method == 'GET':
         return render_template('index.html'), 200
@@ -123,7 +123,7 @@ def download_file(file):
         path = RESULT_FOLDER + file
         return send_file(path, as_attachment=True), 200
     except Exception as e:
-        return str(e), 404
+        return jsonify({'status' : 'Download Failed! ' + str(e)}), 404
 
 # Get Task Status
 @app.route('/status/<task_id>', methods=['GET'])
