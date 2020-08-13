@@ -1,9 +1,10 @@
 version: '2'
 services:
   web:
-    build:
-      context: ./flask-app
-      dockerfile: Dockerfile
+    # build:
+    #   context: ./flask-app
+    #   dockerfile: Dockerfile
+    image: caacuk/video-conversion-app_web
     restart: always
     ports:
      - "5000:5000"
@@ -12,9 +13,10 @@ services:
     volumes:
       - ./appdata:/appdata
   worker:
-    build:
-      context: ./flask-celery
-      dockerfile: Dockerfile
+    # build:
+    #   context: ./flask-celery
+    #   dockerfile: Dockerfile
+    image: caacuk/video-conversion-app_worker
     depends_on:
       - redis
     volumes:
