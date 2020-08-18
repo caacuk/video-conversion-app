@@ -19,8 +19,8 @@ $(document).ready(function () {
                 update_progress(status_url, div[0], progressCount);
                 // console.log(status_url);
             },
-            error: function () {
-                alert('Unexpected error');
+            error: function (response) {
+                alert(response);
             },
             cache: false,
             contentType: false,
