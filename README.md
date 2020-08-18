@@ -19,4 +19,4 @@ If sending another video while in the conversion process, it will carry a new ta
 
 > docker-compose up
 
-Application will run on port :5000
+Application will run on port 80
