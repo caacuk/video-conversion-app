@@ -86,13 +86,13 @@ def home():
 def download_file(file):
     try:
         # Remove converted file after downloaded
-        @after_this_request
-        def remove_file(response):
-            try:
-                os.remove(RESULT_FOLDER + file)
-            except Exception as error:
-                app.logger.error("Error removing or closing downloaded file handle", error)
-            return response
+        # @after_this_request
+        # def remove_file(response):
+        #     try:
+        #         os.remove(RESULT_FOLDER + file)
+        #     except Exception as error:
+        #         app.logger.error("Error removing or closing downloaded file handle", error)
+        #     return response
 
         path = RESULT_FOLDER + file
         return send_file(path, as_attachment=True), 200
